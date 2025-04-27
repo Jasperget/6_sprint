@@ -1,38 +1,43 @@
 package handlers
 
 import (
-	"6_sprint/internal/service"
 	"fmt"
-	"html/template"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"6_sprint/internal/service"
 )
 
 // IndexHandler обрабатывает запросы к корневому эндпоинту / и возвращает HTML-страницу.
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем полный путь к файлу index.html (были проблемы, если запускать в vscode он не читает фаил index.html)
+	// Проверяем метод запроса
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получаем полный путь к файлу index.html
 	fullPath, err := filepath.Abs("./index.html")
 	if err != nil {
 		http.Error(w, "Ошибка определения пути к HTML", http.StatusInternalServerError)
 		return
 	}
 
-	// Парсим HTML-файл
-	tmpl, err := template.ParseFiles(fullPath)
-	if err != nil {
-		http.Error(w, "Ошибка загрузки HTML", http.StatusInternalServerError)
-		return
-	}
-
-	// Отправляем HTML-страницу клиенту
-	tmpl.Execute(w, nil)
+	// Отправляем статический HTML-файл клиенту
+	http.ServeFile(w, r, fullPath)
 }
 
 // UploadHandler обрабатывает загрузку файла через форму.
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса
+	if r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Ограничиваем размер загружаемого файла
 	r.ParseMultipartForm(10 << 20) // 10 MB
 
@@ -58,8 +63,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Создаём локальный файл для результата, без utc, делаю в windows
-	// и добавляю к имени файла дату и время
+	// Создаём локальный файл для результата, делаю в windows
 	outputFileName := fmt.Sprintf("result_%s%s", time.Now().UTC().Format("15-04-05_02.01.2006"), filepath.Ext(handler.Filename))
 	outputFile, err := os.Create(outputFileName)
 	if err != nil {
@@ -77,5 +81,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Возвращаем результат конвертации
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(result))
+	_, err = w.Write([]byte(result))
+	if err != nil {
+		http.Error(w, "Ошибка отправки результата клиенту", http.StatusInternalServerError)
+		return
+	}
 }

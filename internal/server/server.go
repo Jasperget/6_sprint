@@ -20,6 +20,8 @@ func NewServer(logger *log.Logger) *Server {
 	router := http.NewServeMux()
 
 	// Регистрируем хендлеры
+	// IndexHandler - обработка корневого эндпоинта "/" МЕТОДОМ GET
+	// UploadHandler - обработка загрузки файла через форму МЕТОДОМ POST
 	router.HandleFunc("/", handlers.IndexHandler)
 	router.HandleFunc("/upload", handlers.UploadHandler)
 

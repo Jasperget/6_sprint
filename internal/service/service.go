@@ -1,9 +1,9 @@
 package service
 
 import (
-	"6_sprint/pkg/morse"
-	"errors"
 	"strings"
+
+	"6_sprint/pkg/morse"
 )
 
 // ConvertTextToMorseOrViceVersa определяет тип входной строки (код Морзе или текст)
@@ -13,22 +13,23 @@ func ConvertTextToMorseOrViceVersa(input string) (string, error) {
 	if isMorseCode(input) {
 		// Конвертируем код Морзе в текст
 		return morse.ToText(input), nil
-	} else if isPlainText(input) {
+	}
+
+	// Проверяем, является ли строка обычным текстом
+	if isPlainText(input) {
 		// Конвертируем текст в код Морзе
 		return morse.ToMorse(input), nil
 	}
+
 	// Если строка не соответствует ни одному формату, возвращаем ошибку
-	return "", errors.New("invalid input format: neither Morse code nor plain text")
+	return "", morse.ErrNoEncoding{Text: input}
 }
 
 // isMorseCode проверяет, является ли строка кодом Морзе.
 func isMorseCode(input string) bool {
-	for _, char := range input {
-		if char != '.' && char != '-' && char != ' ' {
-			return false
-		}
-	}
-	return true
+	return !strings.ContainsFunc(input, func(r rune) bool {
+		return r != '.' && r != '-' && r != ' '
+	})
 }
 
 // isPlainText проверяет, является ли строка обычным текстом.
